@@ -29,13 +29,17 @@ cd arch-rss-notify
 makepkg -si
 ```
 
-### systemd user service (AUR only)
+### systemd user service
+
+For AUR installs, the post-install message shows the enable command.
+Place `.env` at `~/.config/rss-notify/.env` first (see Configuration).
+
+For source builds, copy the service file and enable manually:
 
 ```sh
+cp rss-notify.service ~/.config/systemd/user/
 systemctl --user enable --now rss-notify.service
 ```
-
-Place `.env` at `~/.config/rss-notify/.env` first (see Configuration).
 
 ### Build from source
 
