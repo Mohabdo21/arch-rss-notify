@@ -36,7 +36,13 @@ go build -o rss_notify .
 
 ## Configuration
 
-Settings are loaded from a `.env` file in the working directory (if present), then overridden by CLI flags. An example `.env` is provided in the repository -- copy and edit it to your needs.
+Settings are loaded from a `.env` file in the working directory (if present), then overridden by CLI flags.
+
+- **Local build**: place `.env` next to the binary or in the project root.
+- **AUR package (systemd)**: place `.env` at `~/.config/rss-notify/.env`.
+- **AUR package (manual)**: place `.env` in the working directory or use `--interval`/`--state` flags.
+
+An example `.env` is provided in the repository -- copy and edit it to your needs.
 
 | Variable         | Default                                       | Description           |
 | ---------------- | --------------------------------------------- | --------------------- |
@@ -61,26 +67,8 @@ CLI flags override corresponding env vars:
 
 Runs as a foreground process. Checks feeds every 10 minutes (or configured interval). Sends `notify-send` notifications when updates are found. Press Ctrl+C to stop.
 
-### systemd user service
-
-```ini
-[Unit]
-Description=Arch RSS Package Update Notifier
-After=network.target
-
-[Service]
-Type=simple
-ExecStart=/path/to/rss_notify
-Restart=always
-RestartSec=10
-
-[Install]
-WantedBy=default.target
-```
-
-Place at `~/.config/systemd/user/rss-notifier.service`, then enable:
+### systemd user service (AUR only)
 
 ```sh
-systemctl --user daemon-reload
-systemctl --user enable --now rss-notifier.service
+systemctl --user enable --now rss-notify.service
 ```
