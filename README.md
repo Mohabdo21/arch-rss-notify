@@ -84,16 +84,3 @@ Place at `~/.config/systemd/user/rss-notifier.service`, then enable:
 systemctl --user daemon-reload
 systemctl --user enable --now rss-notifier.service
 ```
-
-## Architecture
-
-Single `package main`. No internal packages.
-
-| File          | Purpose                                                   |
-| ------------- | --------------------------------------------------------- |
-| `main.go`     | Ticker loop, CLI flags, signal handling                   |
-| `config.go`   | Loads settings from `.env` and CLI flags                  |
-| `reader.go`   | Concurrent RSS fetch with retry, jitter, GUID dedup       |
-| `pacman.go`   | `pacman -Q` and `pacman -Qi` wrappers                     |
-| `notifier.go` | `notify-send` desktop notifications, critical detection   |
-| `state.go`    | JSON state persistence (tracks notified package versions) |
