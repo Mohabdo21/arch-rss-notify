@@ -90,6 +90,7 @@ aur-update: aur-clone
 			git branch -m master; \
 		fi
 	@cp aur/PKGBUILD $(AUR_DIR)/PKGBUILD
+	@cp aur/arch-rss-notify.install $(AUR_DIR)/arch-rss-notify.install 2>/dev/null || true
 	@CURRENT_VER=$$(grep '^pkgver=' $(AUR_DIR)/PKGBUILD | cut -d= -f2); \
 	CURRENT_REL=$$(grep '^pkgrel=' $(AUR_DIR)/PKGBUILD | cut -d= -f2); \
 	NEW_VER=$(VERSION); \
@@ -118,7 +119,7 @@ aur-update: aur-clone
 aur-publish: aur-update
 	@cd $(AUR_DIR) && \
 		if [ -n "$$(git status --porcelain PKGBUILD .SRCINFO)" ]; then \
-			git add PKGBUILD .SRCINFO && \
+			git add -A && \
 			git commit -m "Update to $(VERSION)" && \
 			git push origin master && \
 			echo "Published arch-rss-notify to AUR"; \
