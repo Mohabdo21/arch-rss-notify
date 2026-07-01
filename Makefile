@@ -119,7 +119,7 @@ aur-update: aur-clone
 aur-publish: aur-update
 	@cd $(AUR_DIR) && \
 		if [ -n "$$(git status --porcelain PKGBUILD .SRCINFO)" ]; then \
-			git add -A && \
+			git add PKGBUILD .SRCINFO arch-rss-notify.install && \
 			git commit -m "Update to $(VERSION)" && \
 			git push origin master && \
 			echo "Published arch-rss-notify to AUR"; \
