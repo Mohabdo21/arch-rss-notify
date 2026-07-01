@@ -82,7 +82,17 @@ aur-clone:
 	fi
 
 aur-update: aur-clone
-	@cd $(AUR_DIR) && git pull
+	@cd $(AUR_DIR) && \
+		if git rev-parse --verify HEAD >/dev/null 2>&1; then \
+			git pull; \
+		else \
+			echo "Empty AUR repo -- skipping pull"; \
+		fi
+	@if [ ! -f $(AUR_DIR)/PKGBUILD ]; then \
+		echo "Copying initial PKGBUILD and .SRCINFO from project aur/"; \
+		cp aur/PKGBUILD $(AUR_DIR)/PKGBUILD; \
+		cp aur/.SRCINFO $(AUR_DIR)/.SRCINFO; \
+	fi
 	@CURRENT_VER=$$(grep '^pkgver=' $(AUR_DIR)/PKGBUILD | cut -d= -f2); \
 	CURRENT_REL=$$(grep '^pkgrel=' $(AUR_DIR)/PKGBUILD | cut -d= -f2); \
 	NEW_VER=$(VERSION); \
