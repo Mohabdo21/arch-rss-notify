@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-const version = "0.1.1"
+const version = "0.1.2"
 
 var titleRegex = regexp.MustCompile(`^(\S+)\s+(\S+)`)
 
