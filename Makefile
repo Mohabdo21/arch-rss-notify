@@ -87,6 +87,7 @@ aur-update: aur-clone
 			git pull; \
 		else \
 			echo "Empty AUR repo -- skipping pull"; \
+			git branch -m master; \
 		fi
 	@if [ ! -f $(AUR_DIR)/PKGBUILD ]; then \
 		echo "Copying initial PKGBUILD and .SRCINFO from project aur/"; \
@@ -121,10 +122,10 @@ aur-update: aur-clone
 
 aur-publish: aur-update
 	@cd $(AUR_DIR) && \
-		if ! git diff --quiet PKGBUILD .SRCINFO; then \
+		if [ -n "$$(git status --porcelain PKGBUILD .SRCINFO)" ]; then \
 			git add PKGBUILD .SRCINFO && \
 			git commit -m "Update to $(VERSION)" && \
-			git push && \
+			git push origin master && \
 			echo "Published arch-rss-notify to AUR"; \
 		else \
 			echo "No changes to commit."; \
