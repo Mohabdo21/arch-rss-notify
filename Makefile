@@ -58,7 +58,8 @@ release:
 	echo "==> Computing sha256sums for v$(VERSION)"; \
 	SHA=$$(curl -sL "https://github.com/Mohabdo21/arch-rss-notify/archive/v$(VERSION).tar.gz" | sha256sum | cut -d' ' -f1); \
 	sed -i "s/^sha256sums=.*/sha256sums=('$$SHA')/" aur/PKGBUILD; \
-	git add aur/PKGBUILD; \
+	sed -i "s/^sha256sums =.*/sha256sums = $$SHA/" aur/.SRCINFO; \
+	git add aur/PKGBUILD aur/.SRCINFO; \
 	git commit -m "chore: update AUR PKGBUILD checksums for v$(VERSION)"; \
 	git push origin main; \
 	echo ""; \
