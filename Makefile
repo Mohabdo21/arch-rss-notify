@@ -48,7 +48,7 @@ release:
 	sed -i "s/^pkgrel=.*/pkgrel=1/" aur/PKGBUILD; \
 	sed -i "s/^pkgver =.*/pkgver = $(VERSION)/" aur/.SRCINFO; \
 	sed -i "s/^pkgrel =.*/pkgrel = 1/" aur/.SRCINFO; \
-	sed -i "s|#tag=v[^\"]*|#tag=v$(VERSION)|" aur/.SRCINFO; \
+	sed -i "s|source =.*|source = arch-rss-notify-$(VERSION).tar.gz::https://github.com/Mohabdo21/arch-rss-notify/archive/v$(VERSION).tar.gz|" aur/.SRCINFO; \
 	git add main.go aur/PKGBUILD aur/.SRCINFO; \
 	git commit -m "chore: bump version to $(VERSION)"; \
 	echo ""; \
@@ -58,10 +58,11 @@ release:
 	echo "==> Pushing to GitHub"; \
 	git push origin main "v$(VERSION)"; \
 	echo ""; \
-	echo "==> Updating AUR PKGBUILD checksums for v$(VERSION)"; \
-	sed -i "s/^sha256sums=.*/sha256sums=('SKIP')/" aur/PKGBUILD; \
-	sed -i "s/^sha256sums =.*/sha256sums = SKIP/" aur/.SRCINFO; \
-	sed -i "s|source =.*|source = arch-rss-notify::git+https://github.com/Mohabdo21/arch-rss-notify.git#tag=v$(VERSION)|" aur/.SRCINFO; \
+	echo "==> Computing SHA256 for source tarball"; \
+	TAR_URL="https://github.com/Mohabdo21/arch-rss-notify/archive/v$(VERSION).tar.gz"; \
+	SHA=$$(curl -sL "$$TAR_URL" | sha256sum | cut -d' ' -f1); \
+	sed -i "s/^sha256sums=.*/sha256sums=('$$SHA')/" aur/PKGBUILD; \
+	sed -i "s/^sha256sums =.*/sha256sums = $$SHA/" aur/.SRCINFO; \
 	git add aur/PKGBUILD aur/.SRCINFO; \
 	git commit -m "chore: update AUR PKGBUILD checksums for v$(VERSION)"; \
 	git push origin main; \
@@ -88,11 +89,7 @@ aur-update: aur-clone
 			echo "Empty AUR repo -- skipping pull"; \
 			git branch -m master; \
 		fi
-	@if [ ! -f $(AUR_DIR)/PKGBUILD ]; then \
-		echo "Copying initial PKGBUILD and .SRCINFO from project aur/"; \
-		cp aur/PKGBUILD $(AUR_DIR)/PKGBUILD; \
-		cp aur/.SRCINFO $(AUR_DIR)/.SRCINFO; \
-	fi
+	@cp aur/PKGBUILD $(AUR_DIR)/PKGBUILD
 	@CURRENT_VER=$$(grep '^pkgver=' $(AUR_DIR)/PKGBUILD | cut -d= -f2); \
 	CURRENT_REL=$$(grep '^pkgrel=' $(AUR_DIR)/PKGBUILD | cut -d= -f2); \
 	NEW_VER=$(VERSION); \
@@ -112,9 +109,8 @@ aur-update: aur-clone
 			echo "pkgrel left as $$CURRENT_REL"; \
 		fi \
 	fi
-	@echo "Updating sha256sums..."
-	@cd $(AUR_DIR) && \
-		SHA=$$(makepkg -g 2>/dev/null | grep -oP "'\K[^']+" | head -1) && \
+	@echo "Computing SHA256 for source tarball..."
+	@cd $(AUR_DIR) && SHA=$$(makepkg -g 2>/dev/null | grep -oP "'\K[^']+" | head -1) && \
 		sed -i "s/^sha256sums=.*/sha256sums=('$$SHA')/" PKGBUILD
 	@cd $(AUR_DIR) && makepkg --printsrcinfo > .SRCINFO
 	@echo "PKGBUILD and .SRCINFO updated for $(VERSION)"
