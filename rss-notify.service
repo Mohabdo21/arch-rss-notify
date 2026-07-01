@@ -7,7 +7,6 @@ Type=simple
 ExecStart=/usr/bin/rss-notify
 Restart=always
 RestartSec=10
-WorkingDirectory=%h/.config/rss-notify
 
 [Install]
 WantedBy=default.target
