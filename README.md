@@ -16,11 +16,39 @@ Polls Arch Linux package RSS feeds and sends desktop notifications when installe
 ## Requirements
 
 - Arch Linux
-- Go 1.26+ for building
+- Go 1.26+ (only needed for building from source - not required for AUR install)
 - `notify-send` (libnotify) for desktop notifications
 - D-Bus session bus (desktop environment)
 
 ## Installation
+
+### From AUR (recommended)
+
+```sh
+yay -S arch-rss-notify
+# or
+paru -S arch-rss-notify
+```
+
+Or manually:
+
+```sh
+git clone https://aur.archlinux.org/arch-rss-notify.git
+cd arch-rss-notify
+makepkg -si
+```
+
+### systemd user service (AUR only)
+
+After installing from AUR, enable the service to run in the background:
+
+```sh
+systemctl --user enable --now rss-notify.service
+```
+
+Place `.env` at `~/.config/rss-notify/.env` before starting (see Configuration below).
+
+### Build from source
 
 ```sh
 git clone https://github.com/Mohabdo21/arch-rss-notify.git
@@ -38,11 +66,11 @@ go build -o rss_notify .
 
 Settings are loaded from a `.env` file in the working directory (if present), then overridden by CLI flags.
 
+- **AUR (systemd)**: place `.env` at `~/.config/rss-notify/.env`.
+- **AUR (manual)**: place `.env` in the working directory or use `--interval`/`--state` flags.
 - **Local build**: place `.env` next to the binary or in the project root.
-- **AUR package (systemd)**: place `.env` at `~/.config/rss-notify/.env`.
-- **AUR package (manual)**: place `.env` in the working directory or use `--interval`/`--state` flags.
 
-An example `.env` is provided in the repository -- copy and edit it to your needs.
+An example `.env` is provided in the repository - copy and edit it to your needs.
 
 | Variable         | Default                                       | Description           |
 | ---------------- | --------------------------------------------- | --------------------- |
@@ -61,14 +89,14 @@ CLI flags override corresponding env vars:
 
 ## Usage
 
+Run as a foreground process:
+
 ```sh
+# AUR install
+rss-notify
+
+# Local build
 ./rss_notify
 ```
 
-Runs as a foreground process. Checks feeds every 10 minutes (or configured interval). Sends `notify-send` notifications when updates are found. Press Ctrl+C to stop.
-
-### systemd user service (AUR only)
-
-```sh
-systemctl --user enable --now rss-notify.service
-```
+Checks feeds every 10 minutes (or configured interval). Sends `notify-send` notifications when updates are found. Press Ctrl+C to stop.
