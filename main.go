@@ -10,6 +10,8 @@ import (
 	"time"
 )
 
+const version = "0.1.0"
+
 var titleRegex = regexp.MustCompile(`^(\S+)\s+(\S+)`)
 
 // consecutiveFetchFailures tracks total-fetch-failure streaks so the ticker
@@ -53,7 +55,11 @@ func main() {
 	)
 	defer stop()
 
-	log.Printf("Starting RSS Notifier (interval: %v)...", cfg.CheckInterval)
+	log.Printf(
+		"Starting RSS Notifier v%s (interval: %v)...",
+		version,
+		cfg.CheckInterval,
+	)
 
 	ticker := time.NewTicker(cfg.CheckInterval)
 	defer ticker.Stop()

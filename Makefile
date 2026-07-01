@@ -1,16 +1,22 @@
 SHELL := /bin/bash
 
-.PHONY: build build-static test
+BINARY = rss_notify
+BUILD_DIR = bin
+AUR_REPO = ssh://aur@aur.archlinux.org/rss-notify.git
+AUR_DIR = /tmp/rss-notify-aur
+VERSION = $(shell grep 'const version' main.go | cut -d'"' -f2)
+
+.PHONY: build build-static test check release aur-clone aur-update aur-publish
 
 build:
-	CGO_ENABLED=0 go build -o bin/rss_notify .
+	CGO_ENABLED=0 go build -o $(BUILD_DIR)/$(BINARY) .
 
 build-static:
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
 		-ldflags="-w -s" \
 		-trimpath \
 		-mod=readonly \
-		-o bin/rss_notify_static .
+		-o $(BUILD_DIR)/$(BINARY)_static .
 
 test: check
 	@echo "Running tests..."
@@ -22,3 +28,89 @@ check:
 	go vet ./...
 	golangci-lint fmt
 	golangci-lint run --fix
+
+# --- Release ---
+
+release:
+	@if [ -z "$(VERSION)" ]; then \
+		echo "Usage: make release VERSION=x.y.z"; \
+		exit 1; \
+	fi; \
+	CURRENT_VER=$$(grep 'const version' main.go | cut -d'"' -f2); \
+	echo ""; \
+	echo "$(BINARY) v$$CURRENT_VER -> v$(VERSION)"; \
+	read -p "Proceed? [y/N] " ok; \
+	if [ "$$ok" != "y" ]; then exit 1; fi; \
+	echo ""; \
+	echo "==> Bumping version in main.go and aur/PKGBUILD"; \
+	sed -i "s/const version = \"$$CURRENT_VER\"/const version = \"$(VERSION)\"/" main.go; \
+	sed -i "s/^pkgver=.*/pkgver=$(VERSION)/" aur/PKGBUILD; \
+	sed -i "s/^pkgrel=.*/pkgrel=1/" aur/PKGBUILD; \
+	git add main.go aur/PKGBUILD; \
+	git commit -m "chore: bump version to $(VERSION)"; \
+	echo ""; \
+	echo "==> Tagging v$(VERSION)"; \
+	git tag "v$(VERSION)"; \
+	echo ""; \
+	echo "==> Pushing to GitHub"; \
+	git push origin main "v$(VERSION)"; \
+	echo ""; \
+	echo "==> Computing sha256sums for v$(VERSION)"; \
+	SHA=$$(curl -sL "https://github.com/Mohabdo21/arch-rss-notify/archive/v$(VERSION).tar.gz" | sha256sum | cut -d' ' -f1); \
+	sed -i "s/^sha256sums=.*/sha256sums=('$$SHA')/" aur/PKGBUILD; \
+	git add aur/PKGBUILD; \
+	git commit -m "chore: update AUR PKGBUILD checksums for v$(VERSION)"; \
+	git push origin main; \
+	echo ""; \
+	echo "==> Publishing to AUR"; \
+	$(MAKE) aur-publish; \
+	echo ""; \
+	echo "Release v$(VERSION) complete."
+
+# --- AUR ---
+
+aur-clone:
+	@if [ ! -d "$(AUR_DIR)" ]; then \
+		git clone $(AUR_REPO) $(AUR_DIR); \
+	else \
+		echo "AUR repo already cloned at $(AUR_DIR)"; \
+	fi
+
+aur-update: aur-clone
+	@cd $(AUR_DIR) && git pull
+	@CURRENT_VER=$$(grep '^pkgver=' $(AUR_DIR)/PKGBUILD | cut -d= -f2); \
+	CURRENT_REL=$$(grep '^pkgrel=' $(AUR_DIR)/PKGBUILD | cut -d= -f2); \
+	NEW_VER=$(VERSION); \
+	if [ "$$CURRENT_VER" != "$$NEW_VER" ]; then \
+		echo "Version changed: $$CURRENT_VER -> $$NEW_VER"; \
+		sed -i "s/^pkgver=.*/pkgver=$$NEW_VER/" $(AUR_DIR)/PKGBUILD; \
+		sed -i "s/^pkgrel=.*/pkgrel=1/" $(AUR_DIR)/PKGBUILD; \
+		echo "pkgrel reset to 1"; \
+	else \
+		echo "Version unchanged: $$CURRENT_VER"; \
+		read -p "Increment pkgrel? (y/n): " inc; \
+		if [ "$$inc" = "y" ]; then \
+			NEW_REL=$$((CURRENT_REL + 1)); \
+			sed -i "s/^pkgrel=.*/pkgrel=$$NEW_REL/" $(AUR_DIR)/PKGBUILD; \
+			echo "pkgrel incremented to $$NEW_REL"; \
+		else \
+			echo "pkgrel left as $$CURRENT_REL"; \
+		fi \
+	fi
+	@echo "Updating sha256sums..."
+	@cd $(AUR_DIR) && \
+		SHA=$$(makepkg -g 2>/dev/null | grep -oP "'\K[^']+" | head -1) && \
+		sed -i "s/^sha256sums=.*/sha256sums=('$$SHA')/" PKGBUILD
+	@cd $(AUR_DIR) && makepkg --printsrcinfo > .SRCINFO
+	@echo "PKGBUILD and .SRCINFO updated for $(VERSION)"
+
+aur-publish: aur-update
+	@cd $(AUR_DIR) && \
+		if ! git diff --quiet PKGBUILD .SRCINFO; then \
+			git add PKGBUILD .SRCINFO && \
+			git commit -m "Update to $(VERSION)" && \
+			git push && \
+			echo "Published rss-notify to AUR"; \
+		else \
+			echo "No changes to commit."; \
+		fi
