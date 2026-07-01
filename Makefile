@@ -2,8 +2,8 @@ SHELL := /bin/bash
 
 BINARY = rss_notify
 BUILD_DIR = bin
-AUR_REPO = ssh://aur@aur.archlinux.org/rss-notify.git
-AUR_DIR = /tmp/rss-notify-aur
+AUR_REPO = ssh://aur@aur.archlinux.org/arch-rss-notify.git
+AUR_DIR = /tmp/arch-rss-notify-aur
 VERSION = $(shell grep 'const version' main.go | cut -d'"' -f2)
 
 .PHONY: build build-static test check release aur-clone aur-update aur-publish
@@ -42,11 +42,14 @@ release:
 	read -p "Proceed? [y/N] " ok; \
 	if [ "$$ok" != "y" ]; then exit 1; fi; \
 	echo ""; \
-	echo "==> Bumping version in main.go and aur/PKGBUILD"; \
+	echo "==> Bumping version in main.go, aur/PKGBUILD, and aur/.SRCINFO"; \
 	sed -i "s/const version = \"$$CURRENT_VER\"/const version = \"$(VERSION)\"/" main.go; \
 	sed -i "s/^pkgver=.*/pkgver=$(VERSION)/" aur/PKGBUILD; \
 	sed -i "s/^pkgrel=.*/pkgrel=1/" aur/PKGBUILD; \
-	git add main.go aur/PKGBUILD; \
+	sed -i "s/^pkgver =.*/pkgver = $(VERSION)/" aur/.SRCINFO; \
+	sed -i "s/^pkgrel =.*/pkgrel = 1/" aur/.SRCINFO; \
+	sed -i "s|#tag=v[^\"]*|#tag=v$(VERSION)|" aur/.SRCINFO; \
+	git add main.go aur/PKGBUILD aur/.SRCINFO; \
 	git commit -m "chore: bump version to $(VERSION)"; \
 	echo ""; \
 	echo "==> Tagging v$(VERSION)"; \
@@ -59,6 +62,7 @@ release:
 	SHA=$$(curl -sL "https://github.com/Mohabdo21/arch-rss-notify/archive/v$(VERSION).tar.gz" | sha256sum | cut -d' ' -f1); \
 	sed -i "s/^sha256sums=.*/sha256sums=('$$SHA')/" aur/PKGBUILD; \
 	sed -i "s/^sha256sums =.*/sha256sums = $$SHA/" aur/.SRCINFO; \
+	sed -i "s|source =.*|source = arch-rss-notify::git+https://github.com/Mohabdo21/arch-rss-notify.git#tag=v$(VERSION)|" aur/.SRCINFO; \
 	git add aur/PKGBUILD aur/.SRCINFO; \
 	git commit -m "chore: update AUR PKGBUILD checksums for v$(VERSION)"; \
 	git push origin main; \
@@ -111,7 +115,7 @@ aur-publish: aur-update
 			git add PKGBUILD .SRCINFO && \
 			git commit -m "Update to $(VERSION)" && \
 			git push && \
-			echo "Published rss-notify to AUR"; \
+			echo "Published arch-rss-notify to AUR"; \
 		else \
 			echo "No changes to commit."; \
 		fi
