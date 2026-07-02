@@ -95,7 +95,7 @@ func checkUpdates(ctx context.Context, cfg *Config, state *State) {
 		Backoff: cfg.FetchBackoff,
 	}
 
-	items, err := FetchFeeds(ctx, cfg.RSSURLs, fetchCfg)
+	itemsMap, err := FetchFeeds(ctx, cfg.RSSURLs, fetchCfg)
 	if err != nil {
 		// Total failure - every feed failed even after retries.
 		consecutiveFetchFailures++
@@ -114,46 +114,48 @@ func checkUpdates(ctx context.Context, cfg *Config, state *State) {
 	}
 	consecutiveFetchFailures = 0
 
-	for _, item := range items {
-		matches := titleRegex.FindStringSubmatch(item.Title)
-		if len(matches) < 3 {
-			continue
-		}
-		pkg := matches[1]
-		version := matches[2]
+	for _, items := range itemsMap {
+		for _, item := range items {
+			matches := titleRegex.FindStringSubmatch(item.Title)
+			if len(matches) < 3 {
+				continue
+			}
+			pkg := matches[1]
+			version := matches[2]
 
-		if installedVer, ok := installed[pkg]; ok {
-			if installedVer != version &&
-				state.ShouldNotify(pkg, version) {
-				log.Printf(
-					"Update found for %s: %s -> %s",
-					pkg,
-					installedVer,
-					version,
-				)
-				desc, err := GetPackageDescription(pkg)
-				if err != nil {
+			if installedVer, ok := installed[pkg]; ok {
+				if installedVer != version &&
+					state.ShouldNotify(pkg, version) {
 					log.Printf(
-						"Warning: could not get description for %s: %v",
+						"Update found for %s: %s -> %s",
 						pkg,
-						err,
+						installedVer,
+						version,
 					)
-				}
-				if err := SendNotification(
-					ctx,
-					pkg,
-					installedVer,
-					version,
-					desc,
-					IsCriticalPackage(pkg),
-				); err != nil {
-					log.Printf(
-						"Error sending notification for %s: %v",
+					desc, err := GetPackageDescription(pkg)
+					if err != nil {
+						log.Printf(
+							"Warning: could not get description for %s: %v",
+							pkg,
+							err,
+						)
+					}
+					if err := SendNotification(
+						ctx,
 						pkg,
-						err,
-					)
+						installedVer,
+						version,
+						desc,
+						IsCriticalPackage(pkg),
+					); err != nil {
+						log.Printf(
+							"Error sending notification for %s: %v",
+							pkg,
+							err,
+						)
+					}
+					state.MarkNotified(pkg, version)
 				}
-				state.MarkNotified(pkg, version)
 			}
 		}
 	}

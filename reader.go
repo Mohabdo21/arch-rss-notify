@@ -160,7 +160,7 @@ func FetchFeeds(
 	ctx context.Context,
 	urls []string,
 	cfg FetchConfig,
-) ([]*gofeed.Item, error) {
+) (map[string][]*gofeed.Item, error) {
 	type feedResult struct {
 		items []*gofeed.Item
 		err   error
@@ -171,12 +171,14 @@ func FetchFeeds(
 	var wg sync.WaitGroup
 
 	for _, url := range urls {
-		wg.Go(func() {
+		wg.Add(1)
+		go func(u string) {
+			defer wg.Done()
 			items, err := FetchFeedWithRetry(
-				ctx, url, cfg.Retries, cfg.Backoff,
+				ctx, u, cfg.Retries, cfg.Backoff,
 			)
-			results <- feedResult{items: items, err: err, url: url}
-		})
+			results <- feedResult{items: items, err: err, url: u}
+		}(url)
 	}
 
 	go func() {
@@ -184,8 +186,7 @@ func FetchFeeds(
 		close(results)
 	}()
 
-	seen := make(map[string]bool)
-	var all []*gofeed.Item
+	all := make(map[string][]*gofeed.Item)
 	var lastErr error
 	var failureCount int
 
@@ -196,27 +197,12 @@ func FetchFeeds(
 			log.Printf("error fetching %s: %v", r.url, r.err)
 			continue
 		}
-		for _, item := range r.items {
-			if item.GUID != "" {
-				if seen[item.GUID] {
-					continue
-				}
-				seen[item.GUID] = true
-			}
-			all = append(all, item)
-		}
+		all[r.url] = r.items
 	}
 
 	if failureCount == len(urls) {
 		return nil, fmt.Errorf(
 			"all %d feeds failed: %w", len(urls), lastErr,
-		)
-	}
-
-	if failureCount > 0 {
-		log.Printf(
-			"warning: %d of %d feeds failed, returning partial results",
-			failureCount, len(urls),
 		)
 	}
 
