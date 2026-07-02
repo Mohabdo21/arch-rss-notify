@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 )
 
 type State struct {
+	mu       sync.RWMutex
 	Notified map[string]string `json:"notified"`
 	dirty    bool
 }
@@ -34,6 +36,9 @@ func LoadState(path string) (*State, error) {
 }
 
 func (s *State) Save(path string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	if !s.dirty {
 		return nil
 	}
@@ -50,6 +55,9 @@ func (s *State) Save(path string) error {
 }
 
 func (s *State) ShouldNotify(pkg, version string) bool {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
 	lastVersion, ok := s.Notified[pkg]
 	if !ok || lastVersion != version {
 		return true
@@ -58,6 +66,9 @@ func (s *State) ShouldNotify(pkg, version string) bool {
 }
 
 func (s *State) MarkNotified(pkg, version string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	s.Notified[pkg] = version
 	s.dirty = true
 }
