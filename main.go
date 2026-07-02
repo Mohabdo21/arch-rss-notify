@@ -239,6 +239,7 @@ func checkUpdates(ctx context.Context, cfg *Config, state *State) {
 							err,
 						)
 					}
+					isAUR := strings.Contains(url, "aur.archlinux.org")
 					if err := SendNotification(
 						ctx,
 						pkg,
@@ -246,6 +247,7 @@ func checkUpdates(ctx context.Context, cfg *Config, state *State) {
 						version,
 						desc,
 						IsCriticalPackage(pkg),
+						isAUR,
 					); err != nil {
 						log.Printf(
 							"Error sending notification for %s: %v",

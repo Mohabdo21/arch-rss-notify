@@ -45,11 +45,14 @@ func IsCriticalPackage(pkg string) bool {
 func SendNotification(
 	ctx context.Context,
 	pkg, oldVersion, version, description string,
-	critical bool,
+	critical bool, isAUR bool,
 ) error {
 	icon := "software-update-available"
 	urgency := "normal"
 	summary := "Package Update Available"
+	if isAUR {
+		summary = "[AUR] Package Update Available"
+	}
 	if critical {
 		icon = "dialog-warning"
 		urgency = "critical"
