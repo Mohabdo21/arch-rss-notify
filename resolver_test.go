@@ -21,9 +21,11 @@ func TestStandardResolver_Resolve(t *testing.T) {
 
 func TestAURResolver_Resolve(t *testing.T) {
 	// Mock server for AUR RPC
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprint(w, `{"results": [{"Version": "7.1.0-1"}]}`)
-	}))
+	ts := httptest.NewServer(
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			_, _ = fmt.Fprint(w, `{"results": [{"Version": "7.1.0-1"}]}`)
+		}),
+	)
 	defer ts.Close()
 
 	resolver := &AURResolver{BaseURL: ts.URL}

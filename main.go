@@ -2,19 +2,100 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"flag"
+	"fmt"
 	"log"
+	"net/http"
 	"os/signal"
 	"regexp"
+	"strings"
 	"syscall"
 	"time"
+
+	"github.com/mmcdole/gofeed"
 )
 
 const version = "0.1.2"
 
 var titleRegex = regexp.MustCompile(`^(\S+)\s+(\S+)`)
 
+type VersionResolver interface {
+	Resolve(
+		ctx context.Context,
+		item *gofeed.Item,
+	) (pkg, version string, err error)
+}
+
+type StandardResolver struct{}
+
+func (r *StandardResolver) Resolve(
+	ctx context.Context,
+	item *gofeed.Item,
+) (string, string, error) {
+	matches := titleRegex.FindStringSubmatch(item.Title)
+	if len(matches) < 3 {
+		return "", "", fmt.Errorf(
+			"title does not match expected pattern: %s",
+			item.Title,
+		)
+	}
+	return matches[1], matches[2], nil
+}
+
+type AURResolver struct {
+	BaseURL string
+}
+
+type aurRPCResponse struct {
+	Results []struct {
+		Version string `json:"Version"`
+	} `json:"results"`
+}
+
+func (r *AURResolver) Resolve(
+	ctx context.Context,
+	item *gofeed.Item,
+) (string, string, error) {
+	// AUR feed items title is usually just the package name
+	fields := strings.Fields(item.Title)
+	if len(fields) == 0 {
+		return "", "", fmt.Errorf("empty title in AUR feed item")
+	}
+	pkg := fields[0]
+
+	url := fmt.Sprintf("%s/rpc/v5/info/%s", r.BaseURL, pkg)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return "", "", err
+	}
+
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return "", "", err
+	}
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", "", fmt.Errorf("AUR RPC returned status %d", resp.StatusCode)
+	}
+
+	var res aurRPCResponse
+	if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
+		return "", "", err
+	}
+
+	if len(res.Results) == 0 {
+		return "", "", fmt.Errorf("no results found for package %s", pkg)
+	}
+
+	return pkg, res.Results[0].Version, nil
+}
+
 // consecutiveFetchFailures tracks total-fetch-failure streaks so the ticker
+
 // loop can log escalating warnings without suppressing the next attempt.
 var consecutiveFetchFailures int
 
