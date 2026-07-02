@@ -195,14 +195,32 @@ func checkUpdates(ctx context.Context, cfg *Config, state *State) {
 	}
 	consecutiveFetchFailures = 0
 
-	for _, items := range itemsMap {
+	resolvers := make(map[string]VersionResolver)
+	for _, url := range cfg.RSSURLs {
+		if strings.Contains(url, "aur.archlinux.org/rss/modified") {
+			resolvers[url] = &AURResolver{BaseURL: "https://aur.archlinux.org"}
+		} else {
+			resolvers[url] = &StandardResolver{}
+		}
+	}
+
+	for url, items := range itemsMap {
+		resolver, ok := resolvers[url]
+		if !ok {
+			log.Printf("Warning: no resolver found for feed %s", url)
+			continue
+		}
+
 		for _, item := range items {
-			matches := titleRegex.FindStringSubmatch(item.Title)
-			if len(matches) < 3 {
+			pkg, version, err := resolver.Resolve(ctx, item)
+			if err != nil {
+				log.Printf(
+					"Warning: could not resolve version for item in %s: %v",
+					url,
+					err,
+				)
 				continue
 			}
-			pkg := matches[1]
-			version := matches[2]
 
 			if installedVer, ok := installed[pkg]; ok {
 				if installedVer != version &&
