@@ -32,45 +32,7 @@ check:
 # --- Release ---
 
 release:
-	@if [ -z "$(VERSION)" ]; then \
-		echo "Usage: make release VERSION=x.y.z"; \
-		exit 1; \
-	fi; \
-	CURRENT_VER=$$(grep 'const version' main.go | cut -d'"' -f2); \
-	echo ""; \
-	echo "$(BINARY) v$$CURRENT_VER -> v$(VERSION)"; \
-	read -p "Proceed? [y/N] " ok; \
-	if [ "$$ok" != "y" ]; then exit 1; fi; \
-	echo ""; \
-	echo "==> Bumping version in main.go, aur/PKGBUILD, and aur/.SRCINFO"; \
-	sed -i "s/const version = \"$$CURRENT_VER\"/const version = \"$(VERSION)\"/" main.go; \
-	sed -i "s/^pkgver=.*/pkgver=$(VERSION)/" aur/PKGBUILD; \
-	sed -i "s/^pkgrel=.*/pkgrel=1/" aur/PKGBUILD; \
-	sed -i "s/^pkgver =.*/pkgver = $(VERSION)/" aur/.SRCINFO; \
-	sed -i "s/^pkgrel =.*/pkgrel = 1/" aur/.SRCINFO; \
-	sed -i "s|source =.*|source = arch-rss-notify-$(VERSION).tar.gz::https://github.com/Mohabdo21/arch-rss-notify/archive/v$(VERSION).tar.gz|" aur/.SRCINFO; \
-	git add main.go aur/PKGBUILD aur/.SRCINFO; \
-	git commit -m "chore: bump version to $(VERSION)"; \
-	echo ""; \
-	echo "==> Tagging v$(VERSION)"; \
-	git tag "v$(VERSION)"; \
-	echo ""; \
-	echo "==> Pushing to GitHub"; \
-	git push origin main "v$(VERSION)"; \
-	echo ""; \
-	echo "==> Computing SHA256 for source tarball"; \
-	TAR_URL="https://github.com/Mohabdo21/arch-rss-notify/archive/v$(VERSION).tar.gz"; \
-	SHA=$$(curl -sL "$$TAR_URL" | sha256sum | cut -d' ' -f1); \
-	sed -i "s/^sha256sums=.*/sha256sums=('$$SHA')/" aur/PKGBUILD; \
-	sed -i "s/^sha256sums =.*/sha256sums = $$SHA/" aur/.SRCINFO; \
-	git add aur/PKGBUILD aur/.SRCINFO; \
-	git commit -m "chore: update AUR PKGBUILD checksums for v$(VERSION)"; \
-	git push origin main; \
-	echo ""; \
-	echo "==> Publishing to AUR"; \
-	$(MAKE) aur-publish; \
-	echo ""; \
-	echo "Release v$(VERSION) complete."
+	@scripts/release.sh "$(VERSION)"
 
 # --- AUR ---
 
