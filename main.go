@@ -16,7 +16,7 @@ import (
 	"github.com/mmcdole/gofeed"
 )
 
-const version = "0.1.6"
+const version = "0.1.7"
 
 var titleRegex = regexp.MustCompile(`^(\S+)\s+(\S+)`)
 

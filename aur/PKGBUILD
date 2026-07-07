@@ -1,7 +1,7 @@
 # Maintainer: Mohannad Ahmed <mohannadabdo21@hotmail.com>
 
 pkgname=arch-rss-notify
-pkgver=0.1.6
+pkgver=0.1.7
 pkgrel=1
 pkgdesc='Arch Linux package RSS feed notifier - polls feeds and sends desktop notifications for installed package updates'
 arch=('x86_64' 'aarch64')
