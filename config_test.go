@@ -22,8 +22,8 @@ func TestLoadConfig(t *testing.T) {
 	if cfg.CheckInterval != 10*time.Minute {
 		t.Errorf("Expected CheckInterval to be 10m, got %v", cfg.CheckInterval)
 	}
-	if len(cfg.RSSURLs) != 3 {
-		t.Errorf("Expected 3 RSS URLs, got %d", len(cfg.RSSURLs))
+	if len(cfg.RSSURLs) != 4 {
+		t.Errorf("Expected 4 RSS URLs, got %d", len(cfg.RSSURLs))
 	}
 	if cfg.FetchRetries != 2 {
 		t.Errorf("Expected FetchRetries=2, got %d", cfg.FetchRetries)

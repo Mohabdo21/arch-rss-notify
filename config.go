@@ -86,5 +86,6 @@ func defaultRSSURLs() []string {
 		"https://archlinux.org/feeds/packages/x86_64/core/",
 		"https://archlinux.org/feeds/packages/x86_64/extra/",
 		"https://archlinux.org/feeds/packages/x86_64/multilib/",
+		"https://aur.archlinux.org/rss/modified",
 	}
 }
