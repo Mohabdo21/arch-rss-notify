@@ -196,7 +196,8 @@ create_release() {
 
 publish_aur() {
 	info "Publishing to AUR..."
-	make aur-publish
+	local ver_no_v="${VERSION#v}"
+	make aur-publish VERSION="$ver_no_v"
 	info "AUR publish complete"
 }
 
