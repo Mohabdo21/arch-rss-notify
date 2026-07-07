@@ -11,7 +11,7 @@ depends=('libnotify')
 makedepends=('go' 'git')
 install=$pkgname.install
 source=("$pkgname-$pkgver.tar.gz::https://github.com/Mohabdo21/arch-rss-notify/archive/v$pkgver.tar.gz")
-sha256sums=('090ebbbc4bae6404698a2589a7bfbf6686474cd52a8166867ccc715571c0d212')
+sha256sums=('a7b4f72f99007f1ba656c46210c9bc9de3b82207f8855ab7e7f98c021ee23897')
 
 build() {
 	cd "$pkgname-$pkgver"
