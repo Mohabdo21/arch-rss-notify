@@ -212,6 +212,11 @@ func checkUpdates(ctx context.Context, cfg *Config, state *State) {
 		}
 
 		for _, item := range items {
+			pkg := strings.Fields(item.Title)[0]
+			if _, ok := installed[pkg]; !ok {
+				continue
+			}
+
 			pkg, version, err := resolver.Resolve(ctx, item)
 			if err != nil {
 				log.Printf(
