@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"math/rand"
 	"net"
@@ -72,6 +73,10 @@ func isTransientError(err error) bool {
 	}
 
 	if errors.Is(err, context.DeadlineExceeded) {
+		return true
+	}
+
+	if errors.Is(err, io.EOF) {
 		return true
 	}
 
