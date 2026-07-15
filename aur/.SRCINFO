@@ -9,7 +9,7 @@ pkgbase = arch-rss-notify
 	depends = libnotify
 	makedepends = go
 	makedepends = git
-	source = arch-rss-notify-0.1.9.tar.gz::https://github.com/Mohabdo21/arch-rss-notify/archive/v0.1.9.tar.gz
+	source = arch-rss-notify-0.1.10.tar.gz::https://github.com/Mohabdo21/arch-rss-notify/archive/v0.1.10.tar.gz
 	sha256sums = SKIP
 
 pkgname = arch-rss-notify
